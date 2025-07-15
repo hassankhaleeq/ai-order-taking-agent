@@ -23,7 +23,7 @@ No app, no buttons — just speak, and the system will understand the order, pro
 1. **Customer makes a phone call** to your Twilio number
 2. **Vapi listens** to the call and forwards the query to OpenAI
 3. **OpenAI generates a smart response** based on customer input (like a food order)
-4. **n8n receives the response**, handles logic, stores info, and sends the order data
+4. **n8n receives the response**, handles logic, stores info, and sends the order data **and even tells ,suggest or anaswer any menu releated question by using rag**
 5. **Wassenger sends an order confirmation** to the customer via WhatsApp
 
 ---
