@@ -47,7 +47,7 @@ No app, no buttons — just speak, and the system will understand the order, pro
 > - Wassenger
 > - n8n Cloud or Self-hosted
 
-1. Set up the **n8n workflow** (JSON file included in this repo)
+1. Set up the **n8n workflow** (JSON file included in this repo) **and you can also download zip file for extra information which include all promts which will be helpfull to setup your agent**
 2. Connect your Twilio number to Vapi
 3. Set Vapi to forward calls to your n8n webhook
 4. Customize the logic for your restaurant’s menu and flow
