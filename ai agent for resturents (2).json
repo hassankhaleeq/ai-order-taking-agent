@@ -1,0 +1,1100 @@
+{
+  "name": "ai agent for resturents",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body }}",
+        "options": {
+          "systemMessage": "You are an AI assistant for a restaurant order system.\n\nYou have access to a PDF menu through RAG, so if the user asks for information about the menu — like item names, prices, or details — use that PDF to answer accurately.\n\nThe user has already completed a call with the voice assistant and provided their name, phone number, and the items they want to order.\n\nYour job is to:\n- Understand the user's order\n- Validate that the items exist in the menu\n- Summarize the order in a short message\n- Be polite and concise\n- Do not ask the user more questions\n\nAt the end, create a summary message\n\nDo not explain how the system works or mention AI.\nOnly focus on returning a natural, useful confirmation.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        320,
+        0
+      ],
+      "id": "e1e6a1fd-b385-4144-a6b2-292f0416855f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        260,
+        220
+      ],
+      "id": "7fcd6a29-087e-4d74-a445-433232a97ddb",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "ipCjuW6klBvKsQXn",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "get-data-for-taking-orders",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "85f3b68f-e855-49f9-b686-ccf9f5687c1e",
+      "name": "user information",
+      "webhookId": "e956b981-3a42-4ec7-a20f-f71a633df486"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"results\": [\n    {\n      \"toolCallId\": \"{{ $('user information').item.json.body.message.toolCalls[0].id || '' }}\",\n      \"result\": \"{{ $json.output.replace(/\"/g, '\\\\\"').replace(/\\n/g, ' ') || '' }}\"\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        760,
+        -200
+      ],
+      "id": "475cee61-6e6f-4b9b-8c79-057938cfad02",
+      "name": "Respond to userinfo"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        40,
+        460
+      ],
+      "id": "4ddf0e8c-6f35-4052-9a1c-7f246dfa8c84",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": "17964C6EA41A0F0C%21s671426c007c74762917daab02aeb533b"
+      },
+      "type": "n8n-nodes-base.microsoftOneDrive",
+      "typeVersion": 1,
+      "position": [
+        260,
+        460
+      ],
+      "id": "b25ae5df-8f25-427c-807e-b32e36f66b66",
+      "name": "Download a file",
+      "credentials": {
+        "microsoftOneDriveOAuth2Api": {
+          "id": "58XpzHoZwHkiD1fh",
+          "name": "Microsoft Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "menu-rag",
+          "mode": "list",
+          "cachedResultName": "menu-rag"
+        },
+        "options": {
+          "pineconeNamespace": "menu-faq"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        460
+      ],
+      "id": "cb955c2c-019e-483c-a442-67e9985bcfd5",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "W4wyjLHwUjrjIPkZ",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        700
+      ],
+      "id": "d4b10b3c-404f-41ac-8670-97efdfa9f0b5",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "ipCjuW6klBvKsQXn",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        660
+      ],
+      "id": "4ea8feb0-655b-430f-8903-1f2066948e8f",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        660,
+        900
+      ],
+      "id": "5af0a264-1dc4-41ae-996b-49bbd007e77b",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Retrieves the most relevant document chunks from Pinecone based on user queries. Ideal for Retrieval-Augmented Generation (RAG) workflows, where AI must respond using real uploaded data such as restaurant menus, FAQs, or documents. This ensures accurate and grounded responses based on your own knowledge base.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "menu-rag",
+          "mode": "list",
+          "cachedResultName": "menu-rag"
+        },
+        "options": {
+          "pineconeNamespace": "menu-faq"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        220
+      ],
+      "id": "bb0c7f18-16fe-43e1-ae6e-9f73138c37d5",
+      "name": "Pinecone Vector Store2",
+      "credentials": {
+        "pineconeApi": {
+          "id": "W4wyjLHwUjrjIPkZ",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        380
+      ],
+      "id": "2cfc6b3e-ef49-4246-873f-98c870d7cbb8",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "ipCjuW6klBvKsQXn",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "hassankhaleeq388@gmail.com",
+        "subject": "customer placed order",
+        "emailType": "text",
+        "message": "=Hi Hassan congratulation {{ $('user information').item.json.body.message.toolCallList[0].function.arguments.Full_Name }} \n\nhas placed an order please check it out\nhere is the summary of cutomer order :\nname:{{ $('user information').item.json.body.message.toolCallList[0].function.arguments.Full_Name }}\n\nemailaddaress: {{ $('user information').item.json.body.message.toolCallList[0].function.arguments.email_address }}\n\n\nitem : {{ $('user information').item.json.body.message.toolCallList[0].function.arguments.What_to_order }}\n\n\n\n\nphone number : {{ $('user information').item.json.body.message.toolCallList[0].function.arguments.Contact_number \n}}\n\n\n\n*more-info*\n{{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        760,
+        220
+      ],
+      "id": "547b10d8-b01d-4379-92ea-5d32008dfaee",
+      "name": "Send-message-to-me",
+      "webhookId": "472c6723-19af-4bbf-9aef-5b5a3abe24d0",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "uGC34kmV6Prgl8tw",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.wassenger.com/v1/messages?token= 6e73ef160b4e615bbba0d21f48587edd8812140008197f3a24fd30f86a8a2604dace2bafa1cd0ff2",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"phone\": \"{{ $('user information').item.json.body.message.toolWithToolCallList[0].toolCall.function.arguments.Contact_number }}\",\n  \"message\": \"{{ $json.output ? $json.output.replace(/[\\n\\r]/g, ' ').replace(/\"/g, '\\\\\\\"') : '' }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        0
+      ],
+      "id": "c53b1bb6-6fe2-4129-9ad4-96b29bd324d9",
+      "name": "http"
+    }
+  ],
+  "pinData": {
+    "user information": [
+      {
+        "json": {
+          "headers": {
+            "host": "hassankaleeq.app.n8n.cloud",
+            "user-agent": "axios/1.8.3",
+            "content-length": "18700",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, br",
+            "baggage": "sentry-environment=production,sentry-public_key=a0021577936aec367b16615ad816c078,sentry-trace_id=575435864c33470da8ca3bbdfe174adc",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "52.27.26.74",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "US",
+            "cf-ray": "95eb02b77368b84b-PDX",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "cookie": "callId=2e162b26-b5f6-43ad-b4ec-4a044d3015f4",
+            "sentry-trace": "575435864c33470da8ca3bbdfe174adc-9ebd505d91520bfe",
+            "traceparent": "00-32f85d59b8496042e26222b329edf284-58933e26de7ca9af-01",
+            "x-call-id": "2e162b26-b5f6-43ad-b4ec-4a044d3015f4",
+            "x-forwarded-for": "52.27.26.74, 104.23.160.11",
+            "x-forwarded-host": "hassankaleeq.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-72-585f59b6c7-vrn2v",
+            "x-is-trusted": "yes",
+            "x-real-ip": "52.27.26.74",
+            "x-vapi-secret": ""
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "message": {
+              "timestamp": 1752433094150,
+              "type": "tool-calls",
+              "toolCalls": [
+                {
+                  "id": "call_Al7Yk5GtDp10OqWbE9kAGAhw",
+                  "type": "function",
+                  "function": {
+                    "name": "get-data-for-taking-orders",
+                    "arguments": {
+                      "home_address": "street number 12",
+                      "email_address": "hassan khaliq 388@gmail.com",
+                      "Full_Name": "Hassan",
+                      "What_to_order": "1 chicken tikka pizza",
+                      "Contact_number": "+92 3116574859"
+                    }
+                  }
+                }
+              ],
+              "toolCallList": [
+                {
+                  "id": "call_Al7Yk5GtDp10OqWbE9kAGAhw",
+                  "type": "function",
+                  "function": {
+                    "name": "get-data-for-taking-orders",
+                    "arguments": {
+                      "home_address": "street number 12",
+                      "email_address": "hassan khaliq 388@gmail.com",
+                      "Full_Name": "Hassan",
+                      "What_to_order": "1 chicken tikka pizza",
+                      "Contact_number": "+92 3116574859"
+                    }
+                  }
+                }
+              ],
+              "toolWithToolCallList": [
+                {
+                  "type": "function",
+                  "function": {
+                    "name": "get-data-for-taking-orders",
+                    "parameters": {
+                      "type": "object",
+                      "required": [
+                        "Full_Name",
+                        "Contact_number",
+                        "What_to_order",
+                        "email_address",
+                        "home_address"
+                      ],
+                      "properties": {
+                        "Full_Name": {
+                          "type": "string",
+                          "description": ""
+                        },
+                        "home_address": {
+                          "type": "string",
+                          "description": ""
+                        },
+                        "What_to_order": {
+                          "type": "string",
+                          "description": ""
+                        },
+                        "email_address": {
+                          "type": "string",
+                          "description": "must ask this  and also ask user if he knows his email if he say no then simply skip this inforamtion"
+                        },
+                        "Contact_number": {
+                          "type": "string",
+                          "description": "ask the user to tell there number with there country code"
+                        },
+                        "special_instruction": {
+                          "type": "string",
+                          "description": ""
+                        }
+                      }
+                    },
+                    "description": "this tool is used to get information from user to take their orders and send these information to server"
+                  },
+                  "server": {
+                    "url": "https://hassankaleeq.app.n8n.cloud/webhook-test/get-data-for-taking-orders",
+                    "headers": {
+                      "Content-Type": "application/json"
+                    }
+                  },
+                  "messages": [
+                    {
+                      "type": "request-start",
+                      "content": "Please hold on. thank you for sending information i am currently  processing for your order please wait...",
+                      "contents": [],
+                      "conditions": [],
+                      "blocking": false
+                    },
+                    {
+                      "type": "request-complete",
+                      "content": "thanks for your patience your order is placed you will receive a conformation shortly . have a nice day bye...",
+                      "contents": [],
+                      "conditions": [],
+                      "endCallAfterSpokenEnabled": true,
+                      "role": "assistant"
+                    },
+                    {
+                      "type": "request-failed",
+                      "content": "ow! its look like i have an issue ,please try again bye !",
+                      "conditions": [],
+                      "contents": [],
+                      "endCallAfterSpokenEnabled": true
+                    }
+                  ],
+                  "toolCall": {
+                    "id": "call_Al7Yk5GtDp10OqWbE9kAGAhw",
+                    "type": "function",
+                    "function": {
+                      "name": "get-data-for-taking-orders",
+                      "arguments": {
+                        "home_address": "street number 12",
+                        "email_address": "hassan khaliq 388@gmail.com",
+                        "Full_Name": "Hassan",
+                        "What_to_order": "1 chicken tikka pizza",
+                        "Contact_number": "+92 3116574859"
+                      }
+                    }
+                  }
+                }
+              ],
+              "artifact": {
+                "messages": [
+                  {
+                    "role": "system",
+                    "message": "You are a friendly and professional restaurant order assistant to take customers orders. Your goal is to collect all required information using the defined tool provided(get-data-for-taking-orders) send these info to server and must collect all information from the tool provided and if customer ask anything about menu ,prices,or any question regarding resturent answer him by tool provided  . Speak clearly and naturally. If the customer is confused or asks questions about the menu, try to assist them. Confirm the final order before ending the call. and also tell the user about total price of items he ordered \nnote : if  the you are unsure what  is the name of user  ask him to tell exact spelling of there name \ncommunication style :\nTone: Friendly, warm, and respectful\n\nStyle: Natural, conversational, and human-like\n\nEnergy: Calm and professional, not robotic\n\nPacing: Speak slowly and clearly, especially for non-English speakers\n\nPersonality: Polite, helpful, and patient\n\nAvoid: Technica...",
+                    "time": 1752432956610,
+                    "secondsFromStart": 0
+                  },
+                  {
+                    "role": "bot",
+                    "message": "Hi. Thanks for calling. Welcome to Hassan Restaurant. I'll help you place your order today. Please tell me your full name to begin.",
+                    "time": 1752432960067,
+                    "endTime": 1752432968177,
+                    "secondsFromStart": 3.12,
+                    "duration": 6620,
+                    "source": ""
+                  },
+                  {
+                    "role": "user",
+                    "message": "My full name is Hassan.",
+                    "time": 1752432969357,
+                    "endTime": 1752432970737,
+                    "secondsFromStart": 12.41,
+                    "duration": 1380
+                  },
+                  {
+                    "role": "bot",
+                    "message": "Thank you, Hassan. Could you please tell me your home address?",
+                    "time": 1752432972407,
+                    "endTime": 1752432975617,
+                    "secondsFromStart": 15.46,
+                    "duration": 2849.9990234375,
+                    "source": ""
+                  },
+                  {
+                    "role": "user",
+                    "message": "Uh, of course, my, uh, home address is street number 12.",
+                    "time": 1752432976997.001,
+                    "endTime": 1752432980167,
+                    "secondsFromStart": 20.050001,
+                    "duration": 3169.9990234375
+                  },
+                  {
+                    "role": "bot",
+                    "message": "Got it. Street number 12. Now do you have an email address you'd like me to note down?",
+                    "time": 1752432982627,
+                    "endTime": 1752432987177,
+                    "secondsFromStart": 25.68,
+                    "duration": 4150,
+                    "source": ""
+                  },
+                  {
+                    "role": "user",
+                    "message": "Uh, of course. My email address is Hassan Khaliq 3 double 8 at Gmail dot com.",
+                    "time": 1752432988296.998,
+                    "endTime": 1752432993487,
+                    "secondsFromStart": 31.349998,
+                    "duration": 4990
+                  },
+                  {
+                    "role": "bot",
+                    "message": "Thank you for that information, Hassan. Just to confirm, is it spelled as hasan colleague 3 88 at g mail dot com?",
+                    "time": 1752432994497,
+                    "endTime": 1752433001097,
+                    "secondsFromStart": 37.55,
+                    "duration": 6360,
+                    "source": ""
+                  },
+                  {
+                    "role": "user",
+                    "message": "Uh, yes.",
+                    "time": 1752433002737,
+                    "endTime": 1752433003397,
+                    "secondsFromStart": 45.79,
+                    "duration": 660
+                  },
+                  {
+                    "role": "bot",
+                    "message": "Perfect. Now could you please provide me with your contact number including your country code?",
+                    "time": 1752433005177.003,
+                    "endTime": 1752433010667,
+                    "secondsFromStart": 48.230003,
+                    "duration": 4840,
+                    "source": ""
+                  },
+                  {
+                    "role": "user",
+                    "message": "Okay. My, uh, contact number including country code is plus 9 2 3 1 1 6 5 7 4 8 5 9.",
+                    "time": 1752433012077,
+                    "endTime": 1752433019267,
+                    "secondsFromStart": 55.13,
+                    "duration": 6870
+                  },
+                  {
+                    "role": "bot",
+                    "message": "Thank you for your contact number, Hassan. Now what would you like to order today?",
+                    "time": 1752433020776.998,
+                    "endTime": 1752433024907,
+                    "secondsFromStart": 63.829998,
+                    "duration": 4130.001953125,
+                    "source": ""
+                  },
+                  {
+                    "role": "user",
+                    "message": "What is the best item in your menu?",
+                    "time": 1752433031107,
+                    "endTime": 1752433033447,
+                    "secondsFromStart": 74.16,
+                    "duration": 2340
+                  },
+                  {
+                    "role": "bot",
+                    "message": "Please hold on.",
+                    "time": 1752433033747,
+                    "endTime": 1752433034867,
+                    "secondsFromStart": 76.8,
+                    "duration": 1120,
+                    "source": ""
+                  },
+                  {
+                    "toolCalls": [
+                      {
+                        "id": "call_8JhgbkTeLAqfz6zb3DsBC3Ie",
+                        "type": "function",
+                        "function": {
+                          "name": "read_menu",
+                          "arguments": "{\n  \"user_question\": \"What is the best item in your menu?\"\n}"
+                        }
+                      }
+                    ],
+                    "role": "tool_calls",
+                    "message": "",
+                    "time": 1752433042357,
+                    "secondsFromStart": 73.876
+                  },
+                  {
+                    "role": "bot",
+                    "message": "1 of the best items on our menu is the chicken tikka pizza. Which is flavorful and priced at PKR 9 90. Would you like to order that?",
+                    "time": 1752433043387,
+                    "endTime": 1752433052026.994,
+                    "secondsFromStart": 86.44,
+                    "duration": 8160.006103515625,
+                    "source": ""
+                  },
+                  {
+                    "role": "tool_call_result",
+                    "time": 1752433049593,
+                    "secondsFromStart": 81.112,
+                    "name": "read_menu",
+                    "result": "Thank you for your patience, Hassan.   Based on the menu information, one of the best items is the **Chicken Tikka Pizza**, known for its spicy desi chicken flavor, priced at **PKR 990**.   Is this the item you would like to order, or would you like to choose something else?",
+                    "metadata": {},
+                    "toolCallId": "call_8JhgbkTeLAqfz6zb3DsBC3Ie"
+                  },
+                  {
+                    "role": "bot",
+                    "message": "Or is there some",
+                    "time": 1752433052217,
+                    "endTime": 1752433053397,
+                    "secondsFromStart": 95.27,
+                    "duration": 1180,
+                    "source": ""
+                  },
+                  {
+                    "role": "user",
+                    "message": "Yes.",
+                    "time": 1752433053157,
+                    "endTime": 1752433053657,
+                    "secondsFromStart": 96.21,
+                    "duration": 500
+                  },
+                  {
+                    "role": "bot",
+                    "message": "Great choice. So far, I have your order for 1 chicken tikka pizza. To summarize, full name has home address, street number 12. Email address, hasan kalik 3 88 at g mail dot com. Plus 9 2 3 1 and 6 5 7 4 8 5 9. Order, 1 chicken tikka pizza, p k r 9 90. Is everything correct? If so, I'll proceed with your order.",
+                    "time": 1752433056757,
+                    "endTime": 1752433080257,
+                    "secondsFromStart": 99.81,
+                    "duration": 19570.0009765625,
+                    "source": ""
+                  },
+                  {
+                    "role": "user",
+                    "message": "Yes. Everything is correct. Please proceed.",
+                    "time": 1752433082407,
+                    "endTime": 1752433084667,
+                    "secondsFromStart": 125.46,
+                    "duration": 2260
+                  },
+                  {
+                    "toolCalls": [
+                      {
+                        "id": "call_Al7Yk5GtDp10OqWbE9kAGAhw",
+                        "type": "function",
+                        "function": {
+                          "name": "get-data-for-taking-orders",
+                          "arguments": "{\n  \"home_address\": \"street number 12\",\n  \"email_address\": \"hassan khaliq 388@gmail.com\",\n  \"Full_Name\": \"Hassan\",\n  \"What_to_order\": \"1 chicken tikka pizza\",\n  \"Contact_number\": \"+92 3116574859\"\n}"
+                        }
+                      }
+                    ],
+                    "role": "tool_calls",
+                    "message": "",
+                    "time": 1752433094147,
+                    "secondsFromStart": 125.666
+                  }
+                ],
+                "messagesOpenAIFormatted": [
+                  {
+                    "role": "system",
+                    "content": "You are a friendly and professional restaurant order assistant to take customers orders. Your goal is to collect all required information using the defined tool provided(get-data-for-taking-orders) send these info to server and must collect all information from the tool provided and if customer ask anything about menu ,prices,or any question regarding resturent answer him by tool provided  . Speak clearly and naturally. If the customer is confused or asks questions about the menu, try to assist them. Confirm the final order before ending the call. and also tell the user about total price of items he ordered \nnote : if  the you are unsure what  is the name of user  ask him to tell exact spelling of there name \ncommunication style :\nTone: Friendly, warm, and respectful\n\nStyle: Natural, conversational, and human-like\n\nEnergy: Calm and professional, not robotic\n\nPacing: Speak slowly and clearly, especially for non-English speakers\n\nPersonality: Polite, helpful, and patient\n\nAvoid: Technica..."
+                  },
+                  {
+                    "role": "assistant",
+                    "content": "Hi. Thanks for calling. Welcome to Hassan Restaurant. I'll help you place your order today. Please tell me your full name to begin."
+                  },
+                  {
+                    "role": "user",
+                    "content": "My full name is Hassan."
+                  },
+                  {
+                    "role": "assistant",
+                    "content": "Thank you, Hassan. Could you please tell me your home address?"
+                  },
+                  {
+                    "role": "user",
+                    "content": "Uh, of course, my, uh, home address is street number 12."
+                  },
+                  {
+                    "role": "assistant",
+                    "content": "Got it. Street number 12. Now do you have an email address you'd like me to note down?"
+                  },
+                  {
+                    "role": "user",
+                    "content": "Uh, of course. My email address is Hassan Khaliq 3 double 8 at Gmail dot com."
+                  },
+                  {
+                    "role": "assistant",
+                    "content": "Thank you for that information, Hassan. Just to confirm, is it spelled as hasan colleague 3 88 at g mail dot com?"
+                  },
+                  {
+                    "role": "user",
+                    "content": "Uh, yes."
+                  },
+                  {
+                    "role": "assistant",
+                    "content": "Perfect. Now could you please provide me with your contact number including your country code?"
+                  },
+                  {
+                    "role": "user",
+                    "content": "Okay. My, uh, contact number including country code is plus 9 2 3 1 1 6 5 7 4 8 5 9."
+                  },
+                  {
+                    "role": "assistant",
+                    "content": "Thank you for your contact number, Hassan. Now what would you like to order today?"
+                  },
+                  {
+                    "role": "user",
+                    "content": "What is the best item in your menu?"
+                  },
+                  {
+                    "role": "assistant",
+                    "content": "Please hold on.",
+                    "tool_calls": [
+                      {
+                        "id": "call_8JhgbkTeLAqfz6zb3DsBC3Ie",
+                        "type": "function",
+                        "function": {
+                          "name": "read_menu",
+                          "arguments": "{\n  \"user_question\": \"What is the best item in your menu?\"\n}"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "role": "tool",
+                    "tool_call_id": "call_8JhgbkTeLAqfz6zb3DsBC3Ie",
+                    "content": "Thank you for your patience, Hassan.   Based on the menu information, one of the best items is the **Chicken Tikka Pizza**, known for its spicy desi chicken flavor, priced at **PKR 990**.   Is this the item you would like to order, or would you like to choose something else?"
+                  },
+                  {
+                    "role": "assistant",
+                    "content": "1 of the best items on our menu is the chicken tikka pizza. Which is flavorful and priced at PKR 9 90. Would you like to order that? Or is there some"
+                  },
+                  {
+                    "role": "user",
+                    "content": "Yes."
+                  },
+                  {
+                    "role": "assistant",
+                    "content": "Great choice. So far, I have your order for 1 chicken tikka pizza. To summarize, full name has home address, street number 12. Email address, hasan kalik 3 88 at g mail dot com. Plus 9 2 3 1 and 6 5 7 4 8 5 9. Order, 1 chicken tikka pizza, p k r 9 90. Is everything correct? If so, I'll proceed with your order."
+                  },
+                  {
+                    "role": "user",
+                    "content": "Yes. Everything is correct. Please proceed."
+                  },
+                  {
+                    "role": "assistant",
+                    "tool_calls": [
+                      {
+                        "id": "call_Al7Yk5GtDp10OqWbE9kAGAhw",
+                        "type": "function",
+                        "function": {
+                          "name": "get-data-for-taking-orders",
+                          "arguments": "{\n  \"home_address\": \"street number 12\",\n  \"email_address\": \"hassan khaliq 388@gmail.com\",\n  \"Full_Name\": \"Hassan\",\n  \"What_to_order\": \"1 chicken tikka pizza\",\n  \"Contact_number\": \"+92 3116574859\"\n}"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "role": "tool",
+                    "tool_call_id": "call_Al7Yk5GtDp10OqWbE9kAGAhw",
+                    "content": "Tool Result Still Pending But Proceed Further If Possible."
+                  }
+                ]
+              },
+              "call": {
+                "id": "2e162b26-b5f6-43ad-b4ec-4a044d3015f4",
+                "orgId": "5dc581f1-d373-403d-9fd7-c7239369f120",
+                "createdAt": "2025-07-13T18:55:56.459Z",
+                "updatedAt": "2025-07-13T18:55:56.459Z",
+                "type": "webCall",
+                "monitor": {
+                  "listenUrl": "wss://phone-call-websocket.aws-us-west-2-backend-production2.vapi.ai/2e162b26-b5f6-43ad-b4ec-4a044d3015f4/listen",
+                  "controlUrl": "https://phone-call-websocket.aws-us-west-2-backend-production2.vapi.ai/2e162b26-b5f6-43ad-b4ec-4a044d3015f4/control"
+                },
+                "transport": {
+                  "provider": "daily",
+                  "assistantVideoEnabled": false,
+                  "callUrl": "https://vapi.daily.co/TKNZS5DRokqhnJVzArSq"
+                },
+                "webCallUrl": "https://vapi.daily.co/TKNZS5DRokqhnJVzArSq",
+                "status": "queued",
+                "assistantId": "61f6e8bc-7554-4f2e-8f40-57d748bfcdff",
+                "assistantOverrides": {
+                  "clientMessages": [
+                    "transcript",
+                    "hang",
+                    "metadata",
+                    "tool-calls",
+                    "tool-calls-result",
+                    "tool.completed",
+                    "transfer-update",
+                    "user-interrupted",
+                    "status-update"
+                  ]
+                }
+              },
+              "assistant": {
+                "id": "61f6e8bc-7554-4f2e-8f40-57d748bfcdff",
+                "orgId": "5dc581f1-d373-403d-9fd7-c7239369f120",
+                "name": "order taking agent",
+                "voice": {
+                  "model": "tts-1",
+                  "voiceId": "alloy",
+                  "provider": "openai"
+                },
+                "createdAt": "2025-07-10T15:51:18.287Z",
+                "updatedAt": "2025-07-13T15:46:39.758Z",
+                "model": {
+                  "model": "gpt-4o-mini",
+                  "toolIds": [
+                    "d48adf1b-1aa2-4dc4-a963-1e39a9c5a743",
+                    "bd464a93-8c06-4a14-ac7d-e869596b3f88"
+                  ],
+                  "messages": [
+                    {
+                      "role": "system",
+                      "content": "You are a friendly and professional restaurant order assistant to take customers orders. Your goal is to collect all required information using the defined tool provided(get-data-for-taking-orders) send these info to server and must collect all information from the tool provided and if customer ask anything about menu ,prices,or any question regarding resturent answer him by tool provided  . Speak clearly and naturally. If the customer is confused or asks questions about the menu, try to assist them. Confirm the final order before ending the call. and also tell the user about total price of items he ordered \nnote : if  the you are unsure what  is the name of user  ask him to tell exact spelling of there name \ncommunication style :\nTone: Friendly, warm, and respectful\n\nStyle: Natural, conversational, and human-like\n\nEnergy: Calm and professional, not robotic\n\nPacing: Speak slowly and clearly, especially for non-English speakers\n\nPersonality: Polite, helpful, and patient\n\nAvoid: Technical language, robotic phrasing, or sounding scripted\n\nUse simple words and short sentences\n\nSound like a real staff member from the restaurant\n\nAlways confirm what the customer says politely\n\n\n\n"
+                    }
+                  ],
+                  "provider": "openai",
+                  "tools": [
+                    {
+                      "id": "d48adf1b-1aa2-4dc4-a963-1e39a9c5a743",
+                      "createdAt": "2025-07-10T16:01:29.497Z",
+                      "updatedAt": "2025-07-13T18:55:19.690Z",
+                      "type": "function",
+                      "function": {
+                        "name": "get-data-for-taking-orders",
+                        "parameters": {
+                          "type": "object",
+                          "required": [
+                            "Full_Name",
+                            "Contact_number",
+                            "What_to_order",
+                            "email_address",
+                            "home_address"
+                          ],
+                          "properties": {
+                            "Full_Name": {
+                              "type": "string",
+                              "description": ""
+                            },
+                            "home_address": {
+                              "type": "string",
+                              "description": ""
+                            },
+                            "What_to_order": {
+                              "type": "string",
+                              "description": ""
+                            },
+                            "email_address": {
+                              "type": "string",
+                              "description": "must ask this  and also ask user if he knows his email if he say no then simply skip this inforamtion"
+                            },
+                            "Contact_number": {
+                              "type": "string",
+                              "description": "ask the user to tell there number with there country code"
+                            },
+                            "special_instruction": {
+                              "type": "string",
+                              "description": ""
+                            }
+                          }
+                        },
+                        "description": "this tool is used to get information from user to take their orders and send these information to server"
+                      },
+                      "messages": [
+                        {
+                          "type": "request-start",
+                          "content": "Please hold on. thank you for sending information i am currently  processing for your order please wait...",
+                          "blocking": false
+                        },
+                        {
+                          "role": "assistant",
+                          "type": "request-complete",
+                          "content": "thanks for your patience your order is placed you will receive a conformation shortly . have a nice day bye...",
+                          "endCallAfterSpokenEnabled": true
+                        },
+                        {
+                          "type": "request-failed",
+                          "content": "ow! its look like i have an issue ,please try again bye !",
+                          "endCallAfterSpokenEnabled": true
+                        }
+                      ],
+                      "orgId": "5dc581f1-d373-403d-9fd7-c7239369f120",
+                      "server": {
+                        "url": "https://hassankaleeq.app.n8n.cloud/webhook-test/get-data-for-taking-orders",
+                        "headers": {
+                          "Content-Type": "application/json"
+                        }
+                      }
+                    },
+                    {
+                      "id": "bd464a93-8c06-4a14-ac7d-e869596b3f88",
+                      "createdAt": "2025-07-11T18:54:49.537Z",
+                      "updatedAt": "2025-07-13T18:55:10.171Z",
+                      "type": "function",
+                      "function": {
+                        "name": "read_menu",
+                        "parameters": {
+                          "type": "object",
+                          "required": [
+                            "user_question"
+                          ],
+                          "properties": {
+                            "user_question": {
+                              "type": "string",
+                              "description": "This is the exact question the customer is asking about the menu,   The AI will send this question to N8N to find the answer. like if the user ask about spcific item price or deals or some questions regarding resturents if you cant find any relevent information tell the customer politly that sorry i cant find any option regarding that\n"
+                            }
+                          }
+                        },
+                        "description": "This tool fetches detailed information from the restaurant's menu using Retrieval-Augmented Generation (RAG). The menu data is stored and processed in N8N. Use this tool when the user asks questions about food items, prices, ingredients, or availability.some questions regarding resturents if you cant find any relevent information tell the customer politly that sorry i cant find any option regarding that"
+                      },
+                      "messages": [
+                        {
+                          "type": "request-start",
+                          "content": "Please hold on.",
+                          "blocking": false
+                        },
+                        {
+                          "type": "request-failed",
+                          "content": "sorry i think i have an issue in my server please end the call and try again sorry for inconvince",
+                          "endCallAfterSpokenEnabled": false
+                        }
+                      ],
+                      "orgId": "5dc581f1-d373-403d-9fd7-c7239369f120",
+                      "server": {
+                        "url": "https://hassankaleeq.app.n8n.cloud/webhook-test/get-data-for-taking-orders",
+                        "headers": {
+                          "Content-Type": "application/json"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "firstMessage": "Hi! Thanks for calling,welcome to Hassan  restaurant. I’ll help you place your order today. please tell me your full name to begin",
+                "voicemailMessage": "Please call back when you're available.",
+                "endCallMessage": "Goodbye.",
+                "transcriber": {
+                  "model": "nova-2",
+                  "language": "en",
+                  "provider": "deepgram"
+                },
+                "clientMessages": [
+                  "transcript",
+                  "hang",
+                  "metadata",
+                  "tool-calls",
+                  "tool-calls-result",
+                  "tool.completed",
+                  "transfer-update",
+                  "user-interrupted",
+                  "status-update"
+                ],
+                "keypadInputPlan": {
+                  "enabled": false,
+                  "delimiters": [
+                    "#",
+                    "*"
+                  ],
+                  "timeoutSeconds": 2
+                }
+              }
+            }
+          },
+          "webhookUrl": "https://hassankaleeq.app.n8n.cloud/webhook-test/get-data-for-taking-orders",
+          "executionMode": "test"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to userinfo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send-message-to-me",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "http",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "user information": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Download a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download a file": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to userinfo": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "746f91de-4513-4d0b-9a88-c0ea47ad42d5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "07999c660ec340a8e4aa79fa766e5113716a049ee41e337fb08e3876ef0c9b17"
+  },
+  "id": "khij7v63AyWF5LJF",
+  "tags": []
+}
